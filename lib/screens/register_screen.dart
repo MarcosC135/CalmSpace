@@ -11,6 +11,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -32,8 +33,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           password: _passwordController.text.trim(),
         );
 
-        // Guardar el rol en Firestore
+        // Guardar nombre en Authentication
+        await userCredential.user!.updateDisplayName(_nameController.text.trim());
+
+        // Guardar el rol e información adicional en Firestore
         await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'name': _nameController.text.trim(),
           'email': userCredential.user!.email,
           'role': 'User',
           'createdAt': FieldValue.serverTimestamp(),
@@ -86,6 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -111,6 +117,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 50),
+
+                // Campo de Nombre
+                TextFormField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Nombre Completo',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'El nombre es obligatorio';
+                    }
+                    if (value.trim().length < 3) {
+                      return 'Ingresa un nombre válido';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 30),
 
                 // Campo de Email
                 TextFormField(
