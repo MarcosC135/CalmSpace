@@ -3,7 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart'; // IMPORTANTE: Importar Fireb
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
+
+  const RegisterScreen({super.key, this.auth, this.firestore});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -27,8 +30,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       try {
+        final authInstance = widget.auth ?? FirebaseAuth.instance;
+        final firestoreInstance = widget.firestore ?? FirebaseFirestore.instance;
+
         // 2. Intentar crear el usuario en Firebase
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        UserCredential userCredential = await authInstance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -37,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await userCredential.user!.updateDisplayName(_nameController.text.trim());
 
         // Guardar el rol e información adicional en Firestore
-        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        await firestoreInstance.collection('users').doc(userCredential.user!.uid).set({
           'name': _nameController.text.trim(),
           'email': userCredential.user!.email,
           'role': 'User',
