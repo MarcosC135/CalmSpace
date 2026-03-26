@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // IMPORTANTE: Importar Firebase
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -8,29 +9,75 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Llave global para identificar y validar el formulario
   final _formKey = GlobalKey<FormState>();
-
-  // Controladores para obtener el texto de los campos
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Función que se ejecuta al presionar el botón
-  void _register() {
-    // Valida si todos los campos cumplen las condiciones
+  // Variable para mostrar un indicador de carga
+  bool _isLoading = false;
+
+  // Función asíncrona para conectar con Firebase
+  Future<void> _register() async {
+    // 1. Validar el formulario localmente
     if (_formKey.currentState!.validate()) {
-      // Si todo está bien, aquí iría la conexión con Firebase (HU01-T2)
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Procesando datos...')));
-      print("Email: ${_emailController.text}");
-      print("Password: ${_passwordController.text}");
+      setState(() {
+        _isLoading = true; // Empezamos a cargar
+      });
+
+      try {
+        // 2. Intentar crear el usuario en Firebase
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // 3. Si tiene éxito, mostramos mensaje y limpiamos (o navegamos)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Cuenta creada con éxito! Bienvenido a CalmSpace'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Aquí podrías usar Navigator.pushReplacement para ir al Home
+        }
+      } on FirebaseAuthException catch (e) {
+        // 4. Manejo de errores específicos de Firebase
+        String errorMsg = 'Ocurrió un error inesperado';
+
+        if (e.code == 'weak-password') {
+          errorMsg = 'La contraseña es muy débil.';
+        } else if (e.code == 'email-already-in-use') {
+          errorMsg = 'Ya existe una cuenta con este correo.';
+        } else if (e.code == 'invalid-email') {
+          errorMsg = 'El formato del correo no es válido.';
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+          );
+        }
+      } catch (e) {
+        // Errores generales
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.toString())));
+        }
+      } finally {
+        // 5. Quitamos el estado de carga pase lo que pase
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
   @override
   void dispose() {
-    // Es importante limpiar los controladores al salir de la pantalla
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -39,97 +86,100 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade50, // Azulito muy suave y calmante
+      backgroundColor: Colors.blue.shade50,
       appBar: AppBar(title: const Text('Crear Cuenta'), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Regístrate en CalmSpace',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 50),
-
-              // Campo de Email
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Correo Electrónico',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide
-                        .none, // Ocultamos el borde crudo para un look más limpio
-                  ),
-                  filled: true,
-                  fillColor:
-                      Colors.white, // Resalta impecable sobre el fondo azul
-                  prefixIcon: const Icon(Icons.email),
+          child: SingleChildScrollView(
+            // Añadido para evitar error de overflow con el teclado
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                const Text(
+                  'Regístrate en CalmSpace',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El correo es obligatorio'; // Criterio: Campos obligatorios
-                  }
-                  // Validación básica de formato de correo
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Ingresa un correo válido'; // Criterio: Email válido
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 50),
 
-              // Campo de Contraseña
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true, // Oculta el texto
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  prefixIcon: const Icon(Icons.lock),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'La contraseña es obligatoria'; // Criterio: Campos obligatorios
-                  }
-                  if (value.length < 6) {
-                    return 'Debe tener mínimo 6 caracteres'; // Criterio: Mínimo 6 caracteres
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 50),
-
-              // Botón de Registro
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    shape: const StadiumBorder(),
-                  ),
-                  child: const Text(
-                    'Registrarse',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                // Campo de Email
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Correo Electrónico',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
                     ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.email),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return 'El correo es obligatorio';
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
+                      return 'Ingresa un correo válido';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 30),
+
+                // Campo de Contraseña
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.lock),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return 'La contraseña es obligatoria';
+                    if (value.length < 6)
+                      return 'Debe tener mínimo 6 caracteres';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 50),
+
+                // Botón de Registro dinámico
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading
+                        ? null
+                        : _register, // Desactiva el botón si está cargando
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      shape: const StadiumBorder(),
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                          ) // Spinner si carga
+                        : const Text(
+                            'Registrarse',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
