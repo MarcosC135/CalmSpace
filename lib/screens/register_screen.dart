@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // IMPORTANTE: Importar Firebase
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,10 +27,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       try {
         // 2. Intentar crear el usuario en Firebase
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
+
+        // Guardar el rol en Firestore
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'email': userCredential.user!.email,
+          'role': 'User',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
         // 3. Si tiene éxito, mostramos mensaje y limpiamos (o navegamos)
         if (mounted) {
@@ -119,10 +127,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.email),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'El correo es obligatorio';
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                       return 'Ingresa un correo válido';
+                    }
                     return null;
                   },
                 ),
@@ -143,10 +153,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'La contraseña es obligatoria';
-                    if (value.length < 6)
+                    }
+                    if (value.length < 6) {
                       return 'Debe tener mínimo 6 caracteres';
+                    }
                     return null;
                   },
                 ),
