@@ -83,5 +83,5 @@ class DefaultFirebaseOptions {
     authDomain: 'calmspace-29937.firebaseapp.com',
     storageBucket: 'calmspace-29937.firebasestorage.app',
   );
-
 }
+
