@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // IMPORTANTE: Importar Firebase
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -18,80 +18,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Variable para mostrar un indicador de carga
   bool _isLoading = false;
 
-  // Función asíncrona para conectar con Firebase
   Future<void> _register() async {
-    // 1. Validar el formulario localmente
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true; // Empezamos a cargar
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authInstance = widget.auth ?? FirebaseAuth.instance;
+      final firestoreInstance = widget.firestore ?? FirebaseFirestore.instance;
+
+      // 1. Crear usuario en Firebase Auth
+      UserCredential userCredential = await authInstance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // 2. Guardar nombre en Authentication
+      await userCredential.user!.updateDisplayName(_nameController.text.trim());
+
+      // 3. Guardar datos adicionales en Firestore
+      await firestoreInstance.collection('users').doc(userCredential.user!.uid).set({
+        'name': _nameController.text.trim(),
+        'email': userCredential.user!.email,
+        'role': 'User',
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
-      try {
-        final authInstance = widget.auth ?? FirebaseAuth.instance;
-        final firestoreInstance = widget.firestore ?? FirebaseFirestore.instance;
+      // CORRECCIÓN: verificar mounted antes de usar context tras awaits
+      if (!mounted) return;
 
-        // 2. Intentar crear el usuario en Firebase
-        UserCredential userCredential = await authInstance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Cuenta creada con éxito! Bienvenido a CalmSpace'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
-        // Guardar nombre en Authentication
-        await userCredential.user!.updateDisplayName(_nameController.text.trim());
+      // CORRECCIÓN: navegar a home explícitamente como respaldo,
+      // en caso de que authStateChanges no dispare la redirección a tiempo.
+      Navigator.pushReplacementNamed(context, '/home');
 
-        // Guardar el rol e información adicional en Firestore
-        await firestoreInstance.collection('users').doc(userCredential.user!.uid).set({
-          'name': _nameController.text.trim(),
-          'email': userCredential.user!.email,
-          'role': 'User',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+    } on FirebaseAuthException catch (e) {
+      String errorMsg = 'Ocurrió un error inesperado';
 
-        // 3. Si tiene éxito, mostramos mensaje y limpiamos (o navegamos)
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Cuenta creada con éxito! Bienvenido a CalmSpace'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // Aquí podrías usar Navigator.pushReplacement para ir al Home
-        }
-      } on FirebaseAuthException catch (e) {
-        // 4. Manejo de errores específicos de Firebase
-        String errorMsg = 'Ocurrió un error inesperado';
-
-        if (e.code == 'weak-password') {
-          errorMsg = 'La contraseña es muy débil.';
-        } else if (e.code == 'email-already-in-use') {
-          errorMsg = 'Ya existe una cuenta con este correo.';
-        } else if (e.code == 'invalid-email') {
-          errorMsg = 'El formato del correo no es válido.';
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-          );
-        }
-      } catch (e) {
-        // Errores generales
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(e.toString())));
-        }
-      } finally {
-        // 5. Quitamos el estado de carga pase lo que pase
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+      if (e.code == 'weak-password') {
+        errorMsg = 'La contraseña es muy débil.';
+      } else if (e.code == 'email-already-in-use') {
+        errorMsg = 'Ya existe una cuenta con este correo.';
+      } else if (e.code == 'invalid-email') {
+        errorMsg = 'El formato del correo no es válido.';
+      } else if (e.code == 'too-many-requests') {
+        errorMsg = 'Demasiados intentos. Intenta más tarde.';
       }
+
+      // CORRECCIÓN: verificar mounted antes de usar context
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+      );
+
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+
+    } finally {
+      // ✅ CORRECCIÓN: usar finally para garantizar que _isLoading se resetea siempre
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -113,7 +110,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            // Añadido para evitar error de overflow con el teclado
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -124,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 50),
 
-                // Campo de Nombre
+                // Campo Nombre
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
@@ -150,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // Campo de Email
+                // Campo Email
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -176,7 +172,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // Campo de Contraseña
+                // Campo Contraseña
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -202,22 +198,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 50),
 
-                // Botón de Registro dinámico
+                // Botón Registrarse
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : _register, // Desactiva el botón si está cargando
+                    onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       shape: const StadiumBorder(),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
-                          ) // Spinner si carga
+                        ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Registrarse',
                             style: TextStyle(
@@ -227,6 +219,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                   ),
+                ),
+                const SizedBox(height: 20),
+
+                // NUEVO: enlace a login
+                TextButton(
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                  child: const Text('¿Ya tienes cuenta? Inicia sesión'),
                 ),
               ],
             ),
