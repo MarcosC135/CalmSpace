@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          // CORRECCIÓN: removido 'const' — HomeScreen no es constante
+          // ✅ CORRECCIÓN: removido 'const' — HomeScreen no es constante
           if (snapshot.hasData) return HomeScreen();
 
           return const LoginScreen();
@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login':    (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        //  CORRECCIÓN: removido 'const'
+        // ✅ CORRECCIÓN: removido 'const'
         '/home':     (context) => HomeScreen(),
       },
     );
