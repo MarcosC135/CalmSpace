@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class RegisterScreen extends StatefulWidget {
-  final FirebaseAuth? auth;
-  final FirebaseFirestore? firestore;
-
-  const RegisterScreen({super.key, this.auth, this.firestore});
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -20,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
 
+  feature/HU-03-login
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -71,6 +70,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
         errorMsg = 'El formato del correo no es válido.';
       } else if (e.code == 'too-many-requests') {
         errorMsg = 'Demasiados intentos. Intenta más tarde.';
+
+  // REGISTRO CON EMAIL Y PASSWORD
+  Future<void> _register() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      try {
+        // Crear usuario
+        UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Guardar nombre en Auth
+        await userCredential.user!
+            .updateDisplayName(_nameController.text.trim());
+
+        // Guardar en Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+          'name': _nameController.text.trim(),
+          'email': userCredential.user!.email,
+          'role': 'User',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Cuenta creada con éxito!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        String msg = 'Error inesperado';
+
+        if (e.code == 'weak-password') {
+          msg = 'La contraseña es muy débil';
+        } else if (e.code == 'email-already-in-use') {
+          msg = 'Este correo ya está registrado';
+        } else if (e.code == 'invalid-email') {
+          msg = 'Correo inválido';
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(e.toString())));
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      main
       }
 
       // CORRECCIÓN: verificar mounted antes de usar context
@@ -92,6 +154,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // GOOGLE SIGN-IN
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser =
+          await googleSignIn.signIn();
+
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return await FirebaseAuth.instance
+          .signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Error: ${e.message}");
+      return null;
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -104,106 +191,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
-      appBar: AppBar(title: const Text('Crear Cuenta'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Crear Cuenta'),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
                 const Text(
                   'Regístrate en CalmSpace',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 50),
+                const SizedBox(height: 40),
 
+ feature/HU-03-login
                 // Campo Nombre
+
+                // NOMBRE
+ main
                 TextFormField(
                   controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: 'Nombre Completo',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    prefixIcon: const Icon(Icons.person),
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre',
+                    prefixIcon: Icon(Icons.person),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El nombre es obligatorio';
-                    }
-                    if (value.trim().length < 3) {
-                      return 'Ingresa un nombre válido';
-                    }
-                    return null;
-                  },
+                  validator: (value) =>
+                      value!.isEmpty ? 'Ingresa tu nombre' : null,
                 ),
-                const SizedBox(height: 30),
 
+ feature/HU-03-login
                 // Campo Email
+
+                const SizedBox(height: 20),
+
+                // EMAIL
+
                 TextFormField(
                   controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Correo Electrónico',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    prefixIcon: const Icon(Icons.email),
+                  decoration: const InputDecoration(
+                    labelText: 'Correo',
+                    prefixIcon: Icon(Icons.email),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El correo es obligatorio';
-                    }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                      return 'Ingresa un correo válido';
-                    }
-                    return null;
-                  },
+                  validator: (value) =>
+                      value!.isEmpty ? 'Ingresa tu correo' : null,
                 ),
-                const SizedBox(height: 30),
 
+            feature/HU-03-login
                 // Campo Contraseña
+
+                const SizedBox(height: 20),
+
+                // PASSWORD
+             main
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Contraseña',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    prefixIcon: const Icon(Icons.lock),
+                    prefixIcon: Icon(Icons.lock),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'La contraseña es obligatoria';
-                    }
-                    if (value.length < 6) {
-                      return 'Debe tener mínimo 6 caracteres';
-                    }
-                    return null;
-                  },
+                  validator: (value) =>
+                      value!.length < 6 ? 'Mínimo 6 caracteres' : null,
                 ),
-                const SizedBox(height: 50),
 
+         feature/HU-03-login
                 // Botón Registrarse
+
+                const SizedBox(height: 30),
+
+                // BOTÓN REGISTRO
+           main
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
+        feature/HU-03-login
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       shape: const StadiumBorder(),
@@ -226,6 +293,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextButton(
                   onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                   child: const Text('¿Ya tienes cuenta? Inicia sesión'),
+
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Registrarse'),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // GOOGLE SIGN-IN
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await signInWithGoogle();
+                  },
+                  icon: Image.network(
+                    'https://cdn-icons-png.flaticon.com/512/281/281764.png',
+                    height: 24,
+                  ),
+                  label: const Text("Continuar con Google"),
+          main
                 ),
               ],
             ),
