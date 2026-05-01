@@ -4,10 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
-import 'screens/register_screen.dart';
-import 'screens/login/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/pending_approval_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/pending_approval_screen.dart';
+import 'screens/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
