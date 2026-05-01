@@ -20,8 +20,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
 
   static const Color _primary   = Color(0xFF2563EB);
   static const Color _background = Color(0xFFF0F2F5);
-  static const Color _textMain  = Color(0xFF111827);
-  static const Color _textSub   = Color(0xFF9E9E9E);
 
   @override
   void initState() {
@@ -59,25 +57,27 @@ class _OwnProfileView extends StatelessWidget {
   final VoidCallback onRefresh;
 
   static const Color _primary    = Color(0xFF2563EB);
+  static const Color _primaryLight = Color(0xFFEEF3FF);
   static const Color _background = Color(0xFFF0F2F5);
   static const Color _textMain   = Color(0xFF111827);
-  static const Color _textSub    = Color(0xFF9E9E9E);
 
   const _OwnProfileView({required this.profile, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     final inicial = profile.fullName.isNotEmpty ? profile.fullName[0].toUpperCase() : 'U';
-    final role = profile.role == 'Psicólogo' ? 'psicólogo' : 'paciente';
-
+    final isPsi = profile.role == 'Psicólogo';
+    final roleLabel = isPsi ? 'Psicólogo' : 'Paciente';
+    final roleIcon  = isPsi ? Icons.psychology_outlined : Icons.self_improvement_rounded;
 
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text('Mi Perfil', style: TextStyle(color: _textMain, fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text('Mi Perfil',
+            style: TextStyle(color: _textMain, fontWeight: FontWeight.bold, fontSize: 20)),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: _textMain),
@@ -93,68 +93,148 @@ class _OwnProfileView extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ── AVATAR + NOMBRE ────────────────────────────────
-            const SizedBox(height: 20),
-            CircleAvatar(
-              radius: 56,
-              backgroundColor: _primary,
-              child: Text(inicial, style: const TextStyle(fontSize: 44, color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 14),
-            Text(profile.fullName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _textMain)),
-            const SizedBox(height: 4),
-            Text(role, style: const TextStyle(fontSize: 14, color: _textSub)),
-            const SizedBox(height: 6),
-            GestureDetector(
-              onTap: () async {
-                final result = await Navigator.push(
-                  context, MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                );
-                if (result == true) onRefresh();
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text('Ver datos de cuenta', style: TextStyle(color: _primary, fontSize: 14, fontWeight: FontWeight.w600)),
-                  SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: _primary, size: 18),
+
+            // ── HEADER CON GRADIENTE ───────────────────────────
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2563EB), Color(0xFF60A5FA)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  // Avatar con borde blanco
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 52,
+                      backgroundColor: const Color(0xFF1D4ED8),
+                      child: Text(
+                        inicial,
+                        style: const TextStyle(
+                          fontSize: 42, color: Colors.white, fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Nombre
+                  Text(
+                    profile.fullName,
+                    style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Badge de rol
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(roleIcon, size: 14, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          roleLabel,
+                          style: const TextStyle(
+                            fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Ver datos de cuenta
+                  GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                      );
+                      if (result == true) onRefresh();
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Ver datos de cuenta',
+                          style: TextStyle(
+                            color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.chevron_right, color: Colors.white, size: 16),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // ── TARJETAS INFO ──────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   _InfoCard(
                     icon: Icons.calendar_today_outlined,
                     title: 'Próxima Cita',
                     subtitle: 'Próximamente',
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEEF3FF), Color(0xFFDBEAFE)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   _InfoCard(
-                    icon: Icons.person_outline,
+                    icon: Icons.psychology_outlined,
                     title: 'Mi Psicólogo',
                     subtitle: 'Próximamente',
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF5F3FF), Color(0xFFEDE9FE)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                    iconColor: const Color(0xFF7C3AED),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
             // ── ACCIONES RÁPIDAS ───────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Acciones Rápidas',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: _textMain),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _textMain),
                   ),
                   const SizedBox(height: 12),
                   _ActionRow(
@@ -180,18 +260,19 @@ class _OwnProfileView extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
             // ── CERRAR SESIÓN ──────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton.icon(
                   onPressed: () async => await FirebaseAuth.instance.signOut(),
                   icon: const Icon(Icons.logout_rounded, size: 18),
-                  label: const Text('Cerrar Sesión', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  label: const Text('Cerrar Sesión',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _primary,
                     side: const BorderSide(color: _primary, width: 1.5),
@@ -209,13 +290,13 @@ class _OwnProfileView extends StatelessWidget {
 }
 
 // ── VISTA PÚBLICA PSICÓLOGO ──────────────────────────────────────────────────
+
 class _PublicPsychologistView extends StatelessWidget {
   final UserProfile profile;
 
   static const Color _primary    = Color(0xFF2563EB);
   static const Color _background = Color(0xFFF0F2F5);
   static const Color _textMain   = Color(0xFF111827);
-  static const Color _textSub    = Color(0xFF9E9E9E);
 
   const _PublicPsychologistView({required this.profile});
 
@@ -349,9 +430,17 @@ class _InfoCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Gradient? gradient;
+  final Color? iconColor;
   static const Color _primary = Color(0xFF2563EB);
 
-  const _InfoCard({required this.icon, required this.title, required this.subtitle});
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.gradient,
+    this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -359,18 +448,19 @@ class _InfoCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: gradient,
+          color: gradient == null ? Colors.white : null,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
         ),
         child: Row(
           children: [
-            Icon(icon, color: _primary, size: 22),
+            Icon(icon, color: iconColor ?? _primary, size: 22),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
+                Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
                 const SizedBox(height: 2),
                 Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
               ],
