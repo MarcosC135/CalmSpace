@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mood/mood_history_screen.dart';
-import 'profile/view_profile_screen.dart';
-import 'availability/manage_availability_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -134,19 +132,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onLogout: _logout,
         ),
         const _ComingSoon(Icons.search_rounded, 'Buscar Psicólogos', 'HU-06 — próximamente'),
-        // HU-05 — Gestionar disponibilidad horaria
-        Builder(builder: (_) {
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? 'psicologo-demo';
-          return ManageAvailabilityScreen(
-            firestoreReady: true,
-            psychologistId: uid,
-          );
-        }),
-        // HU-04 — Perfil real
-        Builder(builder: (_) {
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-          return ViewProfileScreen(uid: uid, isOwnProfile: true);
-        }),
+        const _ComingSoon(Icons.calendar_today_rounded, 'Disponibilidad', 'HU-05 — próximamente'),
+        const _ComingSoon(Icons.person_outline_rounded, 'Perfil', 'HU-04 — próximamente'),
       ]),
     );
   }
@@ -238,12 +225,15 @@ class _HomeTab extends StatelessWidget {
               Text(role == 'Psicólogo' ? 'Panel del psicólogo' : 'Que tengas un buen día',
                 style: const TextStyle(fontSize: 13, color: _textSub)),
             ]),
-            // Avatar — navega al perfil
+            // Avatar — navega al tab de Perfil
             GestureDetector(
               onTap: () {
-                final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ViewProfileScreen(uid: uid, isOwnProfile: true)));
+                // Muestra un snackbar indicando que el perfil es HU-04
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Perfil disponible en HU-04'),
+                    behavior: SnackBarBehavior.floating,
+                  ));
               },
               child: Container(width: 46, height: 46,
                 decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
