@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mood/mood_history_screen.dart';
 import 'profile/view_profile_screen.dart';
+import 'availability/manage_availability_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -133,7 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onLogout: _logout,
         ),
         const _ComingSoon(Icons.search_rounded, 'Buscar Psicólogos', 'HU-06 — próximamente'),
-        const _ComingSoon(Icons.calendar_today_rounded, 'Agenda', 'HU-05 — próximamente'),
+        // HU-05 — Gestionar disponibilidad horaria
+        const ManageAvailabilityScreen(),
         // HU-04 — Perfil real
         Builder(builder: (_) {
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -230,7 +232,13 @@ class _HomeTab extends StatelessWidget {
               Text(role == 'Psicólogo' ? 'Panel del psicólogo' : 'Que tengas un buen día',
                 style: const TextStyle(fontSize: 13, color: _textSub)),
             ]),
-            GestureDetector(onTap: onLogout,
+            // Avatar — navega al perfil
+            GestureDetector(
+              onTap: () {
+                final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ViewProfileScreen(uid: uid, isOwnProfile: true)));
+              },
               child: Container(width: 46, height: 46,
                 decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
                 child: Center(child: Text(inicial,
