@@ -33,10 +33,11 @@ class MyApp extends StatelessWidget {
         title: 'CalmSpace',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primaryColor: const Color(0xFF6C63FF),
+          primaryColor: const Color(0xFF1D35B4),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6C63FF),
+            seedColor: const Color(0xFF1D35B4),
           ),
+          scaffoldBackgroundColor: const Color(0xFFF4F6FB),
           useMaterial3: true,
         ),
         routes: {
