@@ -135,7 +135,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const _ComingSoon(Icons.search_rounded, 'Buscar Psicólogos', 'HU-06 — próximamente'),
         // HU-05 — Gestionar disponibilidad horaria
-        const ManageAvailabilityScreen(),
+        Builder(builder: (_) {
+          final uid = FirebaseAuth.instance.currentUser?.uid ?? 'psicologo-demo';
+          return ManageAvailabilityScreen(
+            firestoreReady: true,
+            psychologistId: uid,
+          );
+        }),
         // HU-04 — Perfil real
         Builder(builder: (_) {
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
