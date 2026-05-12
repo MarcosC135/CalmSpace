@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mood/mood_history_screen.dart';
+import 'profile/view_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -121,12 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       backgroundColor: _bg,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Llamadas — próximamente'))),
-        backgroundColor: _primary,
-        child: const Icon(Icons.phone_rounded, color: Colors.white),
-      ),
       bottomNavigationBar: _BottomNav(
           current: _navIndex, onTap: (i) => setState(() => _navIndex = i)),
       body: IndexedStack(index: _navIndex, children: [
@@ -139,7 +134,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const _ComingSoon(Icons.search_rounded, 'Buscar Psicólogos', 'HU-06 — próximamente'),
         const _ComingSoon(Icons.calendar_today_rounded, 'Agenda', 'HU-05 — próximamente'),
-        _ProfileTab(nombre: _nombre, email: _email, role: _role, onLogout: _logout),
+        // HU-04 — Perfil real
+        Builder(builder: (_) {
+          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          return ViewProfileScreen(uid: uid, isOwnProfile: true);
+        }),
       ]),
     );
   }
@@ -590,15 +589,8 @@ class _PsychCard extends StatelessWidget {
   }
 }
 
-// ── PERFIL TAB ────────────────────────────────────────────────────────────────
-class _ProfileTab extends StatelessWidget {
-  final String nombre, email, role;
-  final VoidCallback onLogout;
-  static const Color _primary  = Color(0xFF2B5BFF);
-  static const Color _textMain = Color(0xFF0D1B3E);
-  static const Color _textSub  = Color(0xFF8A94A6);
-  const _ProfileTab({required this.nombre, required this.email,
-      required this.role, required this.onLogout});
+
+
 
   @override
   Widget build(BuildContext context) {
