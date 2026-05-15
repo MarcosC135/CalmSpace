@@ -44,13 +44,17 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       // El StreamBuilder en main.dart redirige automáticamente al Home
     } on FirebaseAuthException catch (e) {
+      // ignore: avoid_print
+      print('[LoginScreen] FirebaseAuthException: code=${e.code} msg=${e.message}');
       _err(switch (e.code) {
-        'user-not-found'     => 'Usuario no encontrado.',
-        'wrong-password'     => 'Contraseña incorrecta.',
-        'invalid-email'      => 'El formato del correo no es válido.',
-        'too-many-requests'  => 'Demasiados intentos. Intenta más tarde.',
-        'invalid-credential' => 'Correo o contraseña incorrectos.',
-        _                    => 'Error al iniciar sesión.',
+        'user-not-found'      => 'Usuario no encontrado.',
+        'wrong-password'      => 'Contraseña incorrecta.',
+        'invalid-email'       => 'El formato del correo no es válido.',
+        'too-many-requests'   => 'Demasiados intentos. Intenta más tarde.',
+        'invalid-credential'  => 'Correo o contraseña incorrectos.',
+        'user-disabled'       => 'Esta cuenta ha sido deshabilitada.',
+        'network-request-failed' => 'Sin conexión a internet.',
+        _                     => 'Error: ${e.code}',
       });
     } finally {
       if (mounted) setState(() => _isLoading = false);

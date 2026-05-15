@@ -2,90 +2,123 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+
 import 'firebase_options.dart';
+import 'providers/psychologist_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/profile/view_profile_screen.dart';
+import 'screens/availability/manage_availability_screen.dart';
+import 'screens/psychologists/psychologist_catalog_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MyApp());
+  bool firestoreReady = false;
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    firestoreReady = true;
+  } catch (_) {}
+  runApp(CalmSpaceApp(firestoreReady: firestoreReady));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class CalmSpaceApp extends StatelessWidget {
+  final bool firestoreReady;
+  const CalmSpaceApp({super.key, required this.firestoreReady});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'CalmSpace',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1D35B4)),
-        useMaterial3: true,
-      ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          // Cargando
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              backgroundColor: Color(0xFFF4F6FB),
-              body: Center(
-                child: CircularProgressIndicator(color: Color(0xFF1D35B4)),
-              ),
-            );
-          }
-
-          // Sin sesión → Login
-          if (!snapshot.hasData) return const LoginScreen();
-
-          // Con sesión → verificar rol en Firestore
-          return FutureBuilder<DocumentSnapshot>(
-            future: FirebaseFirestore.instance
-                .collection('users')
-                .doc(snapshot.data!.uid)
-                .get(),
-            builder: (context, userSnap) {
-              if (userSnap.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  backgroundColor: Color(0xFFF4F6FB),
-                  body: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF1D35B4)),
-                  ),
-                );
-              }
-
-              if (userSnap.hasData && userSnap.data!.exists) {
-                final data   = userSnap.data!.data() as Map<String, dynamic>;
-                final role   = data['role']   ?? 'Paciente';
-                final status = data['status'] ?? 'activo';
-
-                // Psicólogo pendiente → pantalla de espera
-                if (role == 'Psicólogo' &&
-                    (status == 'pendiente' || status == 'rechazado')) {
-                  return _PendingScreen();
-                }
-              }
-
-              return HomeScreen();
-            },
-          );
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PsychologistProvider()),
+      ],
+      child: MaterialApp(
+        title: 'CalmSpace',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primaryColor: const Color(0xFF1D35B4),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF1D35B4),
+          ),
+          scaffoldBackgroundColor: const Color(0xFFF4F6FB),
+          useMaterial3: true,
+        ),
+        routes: {
+          '/login':       (context) => const LoginScreen(),
+          '/register':    (context) => const RegisterScreen(),
+          '/psicologos':  (context) => const PsychologistCatalogScreen(),
+          '/disponibilidad': (context) => ManageAvailabilityScreen(
+                firestoreReady: firestoreReady),
+          '/perfil': (context) {
+            final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+            return ViewProfileScreen(uid: uid, isOwnProfile: true);
+          },
         },
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                backgroundColor: Color(0xFFF4F6FB),
+                body: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF1D35B4)),
+                ),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data == null) {
+              return const LoginScreen();
+            }
+
+            final uid = snapshot.data!.uid;
+
+            return FutureBuilder<DocumentSnapshot>(
+              // La key evita que se re-ejecute la consulta en cada rebuild
+              key: ValueKey('user_doc_$uid'),
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .get(),
+              builder: (context, userSnap) {
+                if (userSnap.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    backgroundColor: Color(0xFFF4F6FB),
+                    body: Center(
+                      child: CircularProgressIndicator(color: Color(0xFF1D35B4)),
+                    ),
+                  );
+                }
+
+                // Si Firestore falla, ir al Home igual (no bloquear el login)
+                if (userSnap.hasError) {
+                  return HomeScreen(firestoreReady: firestoreReady);
+                }
+
+                if (userSnap.hasData && userSnap.data!.exists) {
+                  final data   = userSnap.data!.data() as Map<String, dynamic>;
+                  final role   = data['role']   ?? 'Paciente';
+                  final status = data['status'] ?? 'activo';
+
+                  if (role == 'Psicólogo' &&
+                      (status == 'pendiente' || status == 'rechazado')) {
+                    return _PendingScreen();
+                  }
+                }
+
+                return HomeScreen(firestoreReady: firestoreReady);
+              },
+            );
+          },
+        ),
       ),
-      routes: {
-        '/login':    (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/home':     (context) => HomeScreen(),
-      },
     );
   }
 }
 
-// Pantalla temporal de pendiente (hasta que se haga merge con las demás ramas)
+// ── PENDING SCREEN ─────────────────────────────────────────────────────────
 class _PendingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -100,14 +133,11 @@ class _PendingScreen extends StatelessWidget {
               const Icon(Icons.hourglass_top_rounded,
                   size: 64, color: Color(0xFF1D35B4)),
               const SizedBox(height: 20),
-              const Text(
-                'Cuenta en revisión',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
+              const Text('Cuenta en revisión',
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B))),
               const SizedBox(height: 10),
               const Text(
                 'Tu cuenta de psicólogo está siendo verificada.\nTe notificaremos cuando sea aprobada.',

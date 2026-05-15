@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mood/mood_history_screen.dart';
+import 'profile/view_profile_screen.dart';
+import 'psychologists/psychologist_catalog_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool firestoreReady;
+  const HomeScreen({super.key, this.firestoreReady = true});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -132,9 +135,12 @@ class _HomeScreenState extends State<HomeScreen> {
           onConfirmMood: _saveMood,
           onLogout: _logout,
         ),
-        const _ComingSoon(Icons.search_rounded, 'Buscar Psicólogos', 'HU-06 — próximamente'),
-        const _ComingSoon(Icons.calendar_today_rounded, 'Disponibilidad', 'HU-05 — próximamente'),
-        const _ComingSoon(Icons.person_outline_rounded, 'Perfil', 'HU-04 — próximamente'),
+        const PsychologistCatalogScreen(),
+        const _ComingSoon(Icons.calendar_today_rounded, 'Disponibilidad', 'Selecciona tu psicólogo primero'),
+        ViewProfileScreen(
+          uid: FirebaseAuth.instance.currentUser?.uid ?? '',
+          isOwnProfile: true,
+        ),
       ]),
     );
   }
