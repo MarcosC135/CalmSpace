@@ -57,7 +57,6 @@ class _OwnProfileView extends StatelessWidget {
   final VoidCallback onRefresh;
 
   static const Color _primary    = Color(0xFF2563EB);
-  static const Color _primaryLight = Color(0xFFEEF3FF);
   static const Color _background = Color(0xFFF0F2F5);
   static const Color _textMain   = Color(0xFF111827);
 
@@ -393,29 +392,24 @@ class _PublicPsychologistView extends StatelessWidget {
             ],
 
             // ── PRÓXIMOS HORARIOS ──────────────────────────────
-            const Text('Próximos Horarios', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textMain)),
+            const Text('Disponibilidad',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textMain)),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: ['10:00 AM', '2:00 PM', '4:00 PM']
-                  .map((t) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.access_time, size: 16, color: _primary),
-                            const SizedBox(width: 6),
-                            Text(t, style: const TextStyle(fontSize: 14, color: _textMain, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ))
-                  .toList(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.grey.shade200)),
+              child: Column(children: const [
+                Icon(Icons.calendar_today_outlined,
+                    color: Color(0xFFCBD5E1), size: 40),
+                SizedBox(height: 12),
+                Text('Este psicólogo aún no ha\nconfigurado su disponibilidad',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF8A94A6), fontSize: 13)),
+              ]),
             ),
             const SizedBox(height: 100),
           ],
