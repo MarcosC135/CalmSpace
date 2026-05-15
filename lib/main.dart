@@ -95,3 +95,45 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+// Pantalla temporal de pendiente (hasta que se haga merge con las demás ramas)
+class _PendingScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F6FB),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.hourglass_top_rounded,
+                  size: 64, color: Color(0xFF1D35B4)),
+              const SizedBox(height: 20),
+              const Text(
+                'Cuenta en revisión',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Tu cuenta de psicólogo está siendo verificada.\nTe notificaremos cuando sea aprobada.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 32),
+              OutlinedButton(
+                onPressed: () => FirebaseAuth.instance.signOut(),
+                child: const Text('Cerrar sesión'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
